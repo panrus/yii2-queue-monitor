@@ -147,6 +147,17 @@ class PushQuery extends ActiveQuery
     }
 
     /**
+     * @return $this
+     */
+    public function innerJoinLastExec()
+    {
+        return $this->innerJoin(
+            ['last_exec' => ExecRecord::tableName()],
+            '{{last_exec}}.[[id]] = {{push}}.[[last_exec_id]]'
+        );
+    }
+
+    /**
      * @param string $interval
      * @link https://www.php.net/manual/en/dateinterval.construct.php
      * @return $this

@@ -39,6 +39,11 @@ MainAsset::register($this);
         'options' => ['class' => 'nav navbar-nav'],
         'items' => [
             [
+                'label' => Module::t('main', 'Summary'),
+                'url' => ['summary/index'] + JobFilter::restoreParams(),
+                'active' => Yii::$app->controller->id === 'summary',
+            ],
+            [
                 'label' => Module::t('main', 'Jobs'),
                 'url' => ['job/index'] + JobFilter::restoreParams(),
                 'active' => Yii::$app->controller->id === 'job',
