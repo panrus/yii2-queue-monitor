@@ -17,7 +17,7 @@ $this->params['breadcrumbs'][] = Module::t('main', 'Dashboard');
 <div class="queue-dashboard">
     <div class="row">
         <div class="col text-right">
-            <h3>Estimated time to complete waiting and in progress jobs: <?= $totalEstimatedTimeRemaining ?></h3>
+            <h3>Estimated time to complete backlog: <?= $totalEstimatedTimeRemaining ?></h3>
         </div>
     </div>
     <div class="row">

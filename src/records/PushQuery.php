@@ -52,6 +52,31 @@ class PushQuery extends ActiveQuery
     }
 
     /**
+     * Fetch all push records which are waiting and should have been run
+     *
+     * @return $this
+     */
+    public function backlogged()
+    {
+        return $this
+            ->waiting()
+            ->andWhere('{{push}}.[[pushed_at]] + {{push}}.[[delay]] <= UNIX_TIMESTAMP()');
+    }
+
+    /**
+     * Fetch all push records which are waiting because they have been
+     * intentionally delayed
+     *
+     * @return $this
+     */
+    public function delayed()
+    {
+        return $this
+            ->waiting()
+            ->andWhere('{{push}}.[[pushed_at]] + {{push}}.[[delay]] > UNIX_TIMESTAMP()');
+    }
+
+    /**
      * @return $this
      */
     public function waiting()

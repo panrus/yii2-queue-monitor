@@ -29,19 +29,18 @@ class PushRecordService
 
         // For each job determine the total number in each known state
         $states = [
-            'waiting',
-            'inProgress',
-            'done',
+            'delayed',
             'success',
             'buried',
-            'hasFails',
-            'stopped'
+            'stopped',
+            'inProgress',
+            'backlogged',
         ];
 
         foreach ( $states as $state )
         {
             $jobsByClass = PushRecord::find()
-                ->select( "{{push}}.[[job_class]], count({{push}}.[[id]]) as {$state}" )
+                ->select( "{{push}}.[[job_class]], count({{push}}.[[id]]) as `{$state}`" )
                 ->$state()
                 ->groupBy('job_class')
                 ->asArray()
@@ -51,28 +50,28 @@ class PushRecordService
 
             foreach ( $pushedJobs as $jobClass => $summaryData )
             {
-                $pushedJobs[$jobClass][$state] = ArrayHelper::getValue( $jobsByClass, "{$jobClass}.{$state}", 0);
+                $pushedJobs[$jobClass][$state] = (int )ArrayHelper::getValue( $jobsByClass, "{$jobClass}.{$state}", 0);
             }
         }
 
         // Compute the average time to execute each job
         $averages = PushRecord::find()
-            ->select( '{{push}}.[[job_class]], AVG({{last_exec}}.[[finished_at]] - {{last_exec}}.[[started_at]]) as average' )
+            ->select( '{{push}}.[[job_class]], AVG({{last_exec}}.[[finished_at]] - {{last_exec}}.[[started_at]]) AS `average`' )
             ->innerJoinLastExec()
             ->groupBy('job_class')
             ->asArray();
 
         foreach ( $averages->each() as $result )
         {
-            $pushedJobs[$result['job_class']]['average'] = Yii::$app->formatter->asDecimal( $result['average'], 2 );
+            $pushedJobs[$result['job_class']]['average'] = (float) $result['average'];
         }
 
-        // Finally compute the estimated time to complete the remaining
-        // (pending) jobs based on average completion times
+        // Finally compute the estimated time to complete the currently
+        // executing and backlogged jobs based on average completion times
         foreach ( $pushedJobs as $jobClass => $summaryData )
         {
-            $waitingAndInProgress = ArrayHelper::getValue($summaryData, 'waiting', 0) + ArrayHelper::getValue($summaryData, 'inProgress', 0);
-            $pushedJobs[$jobClass]['estimated'] = Yii::$app->formatter->asDecimal( $summaryData['average'] * $waitingAndInProgress, 0 );
+            $backloggedAndInProgress = ArrayHelper::getValue($summaryData, 'backlogged', 0) + ArrayHelper::getValue($summaryData, 'inProgress', 0);
+            $pushedJobs[$jobClass]['estimated'] = $summaryData['average'] * $backloggedAndInProgress;
         }
 
         return $pushedJobs;
