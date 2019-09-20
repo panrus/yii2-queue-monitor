@@ -52,6 +52,15 @@ class SummaryController extends Controller
     {
         $pushedJobSummary = PushRecordService::generateSummary();
 
+        $estimatedTotalBacklogSeconds = array_sum( ArrayHelper::getColumn($pushedJobSummary, 'estimated') );
+
+        // Nicely format our floats
+        foreach ( $pushedJobSummary as $key => $value )
+        {
+            $pushedJobSummary[$key]['average'] = Yii::$app->formatter->asDecimal( $pushedJobSummary[$key]['average'], 2 );
+            $pushedJobSummary[$key]['estimated'] = Yii::$app->formatter->asDecimal( $pushedJobSummary[$key]['estimated'], 0 );
+        }
+
         $pushedJobDataProvider = new ArrayDataProvider([
             'allModels' => $pushedJobSummary,
             // Make all columns sortable
@@ -60,11 +69,9 @@ class SummaryController extends Controller
             ],
         ]);
 
-        $eta = array_sum( ArrayHelper::getColumn($pushedJobSummary, 'estimated') );
-
         return $this->render( 'index', [
             'pushedJobDataProvider' => $pushedJobDataProvider,
-            'totalEstimatedTimeRemaining' => Yii::$app->formatter->asDuration( $eta )
+            'totalEstimatedTimeRemaining' => Yii::$app->formatter->asDuration( $estimatedTotalBacklogSeconds )
         ]);
     }
 }
