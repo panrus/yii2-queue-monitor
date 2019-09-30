@@ -71,7 +71,7 @@ class PushRecordService
         foreach ( $pushedJobs as $jobClass => $summaryData )
         {
             $backloggedAndInProgress = ArrayHelper::getValue($summaryData, 'backlogged', 0) + ArrayHelper::getValue($summaryData, 'inProgress', 0);
-            $pushedJobs[$jobClass]['estimated'] = $summaryData['average'] * $backloggedAndInProgress;
+            $pushedJobs[$jobClass]['estimated'] = ArrayHelper::getValue($summaryData, 'average', 0) * $backloggedAndInProgress;
         }
 
         return $pushedJobs;
