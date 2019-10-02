@@ -10,10 +10,11 @@ namespace zhuravljov\yii\queue\monitor\services;
 use Yii;
 use yii\helpers\ArrayHelper;
 use zhuravljov\yii\queue\monitor\records\PushRecord;
+use zhuravljov\yii\queue\monitor\records\WorkerRecord;
 
 class PushRecordService
 {
-    public static function generateSummary()
+    public static function generateSummary( $states = [] )
     {
         $pushedJobs = [];
 
@@ -28,14 +29,17 @@ class PushRecordService
         }
 
         // For each job determine the total number in each known state
-        $states = [
-            'delayed',
-            'success',
-            'buried',
-            'stopped',
-            'inProgress',
-            'backlogged',
-        ];
+        if ( empty($states) )
+        {
+            $states = [
+                'delayed',
+                'success',
+                'buried',
+                'stopped',
+                'inProgress',
+                'backlogged',
+            ];
+        }
 
         foreach ( $states as $state )
         {
@@ -50,7 +54,7 @@ class PushRecordService
 
             foreach ( $pushedJobs as $jobClass => $summaryData )
             {
-                $pushedJobs[$jobClass][$state] = (int )ArrayHelper::getValue( $jobsByClass, "{$jobClass}.{$state}", 0);
+                $pushedJobs[$jobClass][$state] = (int)ArrayHelper::getValue( $jobsByClass, "{$jobClass}.{$state}", 0);
             }
         }
 
@@ -66,12 +70,32 @@ class PushRecordService
             $pushedJobs[$result['job_class']]['average'] = (float) $result['average'];
         }
 
+        $activeWorkerCount = WorkerRecord::find()
+            ->active()
+            ->count();
+
         // Finally compute the estimated time to complete the currently
         // executing and backlogged jobs based on average completion times
         foreach ( $pushedJobs as $jobClass => $summaryData )
         {
+            // Ensure the every job has an average (it may be empty if we have
+            // queued but not yet executed any jobs of the class)
+            $pushedJobs[$jobClass]['average'] = ArrayHelper::getValue($summaryData, 'average', 0);
             $backloggedAndInProgress = ArrayHelper::getValue($summaryData, 'backlogged', 0) + ArrayHelper::getValue($summaryData, 'inProgress', 0);
-            $pushedJobs[$jobClass]['estimated'] = ArrayHelper::getValue($summaryData, 'average', 0) * $backloggedAndInProgress;
+
+            // If we have backlogged tasks then divide by the number of workers
+            // (that's how many we can work on concurrently) to get a total
+            // number of seconds until all queue items are worked down
+            if ( $backloggedAndInProgress > 0 )
+            {
+                $backloggedAndInProgressPerWorker = ceil( $backloggedAndInProgress / $activeWorkerCount );
+            }
+            else
+            {
+                $backloggedAndInProgressPerWorker = 0;
+            }
+
+            $pushedJobs[$jobClass]['estimated'] = $pushedJobs[$jobClass]['average'] * $backloggedAndInProgressPerWorker;
         }
 
         return $pushedJobs;

@@ -111,6 +111,7 @@ class JobMonitor extends Behavior
         $push->trace = (new \Exception())->getTraceAsString();
         $push->context = $this->getContext();
         $push->pushed_at = time();
+        $push->desired_execute_time = time() + $event->delay;
         $push->save(false);
     }
 

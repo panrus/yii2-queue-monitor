@@ -60,7 +60,7 @@ class PushQuery extends ActiveQuery
     {
         return $this
             ->waiting()
-            ->andWhere('{{push}}.[[pushed_at]] + {{push}}.[[delay]] <= UNIX_TIMESTAMP()');
+            ->andWhere('{{push}}.[[desired_execute_time]] <= UNIX_TIMESTAMP()');
     }
 
     /**
@@ -73,7 +73,7 @@ class PushQuery extends ActiveQuery
     {
         return $this
             ->waiting()
-            ->andWhere('{{push}}.[[pushed_at]] + {{push}}.[[delay]] > UNIX_TIMESTAMP()');
+            ->andWhere('{{push}}.[[desired_execute_time]] > UNIX_TIMESTAMP()');
     }
 
     /**
