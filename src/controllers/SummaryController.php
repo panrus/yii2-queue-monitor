@@ -50,7 +50,21 @@ class SummaryController extends Controller
      */
     public function actionIndex()
     {
-        $pushedJobSummary = PushRecordService::generateSummary();
+        // Fetch from cached
+        $pushedJobSummary = PushRecordService::generateSummary( ['delayed','success','buried','stopped','average'], Yii::$app->cache );
+
+        // Fetch live data
+        foreach ( PushRecordService::generateSummary( ['inProgress','backlogged']) as $summary )
+        {
+            $jobClass = $summary['job_class'];
+            $pushedJobSummary[$jobClass]['inProgress'] = $summary['inProgress'];
+            $pushedJobSummary[$jobClass]['backlogged'] = $summary['backlogged'];
+        }
+
+        foreach ( PushRecordService::generateEstimatedTimeToComplete( $pushedJobSummary ) as $jobClass => $estimated )
+        {
+            $pushedJobSummary[$jobClass]['estimated'] = $estimated;
+        }
 
         $estimatedTotalBacklogSeconds = array_sum( ArrayHelper::getColumn($pushedJobSummary, 'estimated') );
 

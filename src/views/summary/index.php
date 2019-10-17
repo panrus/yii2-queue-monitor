@@ -22,7 +22,10 @@ $this->params['breadcrumbs'][] = Module::t('main', 'Dashboard');
     </div>
     <div class="row">
         <div class="col">
-            <?= GridView::widget(['dataProvider' => $pushedJobDataProvider]) ?>
+            <?= GridView::widget([
+                'dataProvider' => $pushedJobDataProvider,
+                'columns' => [ 'job_class','delayed','success','buried','stopped','inProgress','backlogged','average','estimated' ]
+                ]) ?>
         </div>
     </div>
 </div>
