@@ -79,7 +79,7 @@ class SummaryController extends Controller
             'allModels' => $pushedJobSummary,
             // Make all columns sortable
             'sort' => [
-                'attributes' => array_keys( reset($pushedJobSummary) ),
+                'attributes' => array_keys( reset($pushedJobSummary) ?: [] ),
             ],
         ]);
 

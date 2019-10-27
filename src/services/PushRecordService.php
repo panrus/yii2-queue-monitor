@@ -8,6 +8,7 @@
 namespace zhuravljov\yii\queue\monitor\services;
 
 use Yii;
+use Exception;
 use yii\helpers\ArrayHelper;
 use yii\caching\CacheInterface;
 use zhuravljov\yii\queue\monitor\records\PushRecord;
@@ -33,6 +34,7 @@ class PushRecordService
      * (if provided)
      * @param boolean $forceRefresh when set to true bypasses the existing cache
      * @return array
+     * @throws Exception
      */
     public static function generateSummary( Array $states = [], CacheInterface $cache=null, $forceRefresh=false )
     {
@@ -67,10 +69,9 @@ class PushRecordService
                 }
             }
 
-            // We have a number of states that are fetched with a simple active
-            // query param. For those we can execute a simple push record query.
-            // For the The others we execute a manual query
-            if ( in_array( $state, ['delayed','success','buried','stopped']) )
+            // Most states can be fetched with a simple active query. For the
+            // The others we execute a manual query
+            if ( in_array( $state, ['delayed','success','buried','stopped', 'inProgress', 'backlogged']) )
             {
                 $jobsByClass = PushRecord::find()
                     ->select( "{{push}}.[[job_class]], count({{push}}.[[id]]) as `{$state}`" )
@@ -78,31 +79,6 @@ class PushRecordService
                     ->groupBy('job_class')
                     ->asArray()
                     ->all();
-
-                $jobsByClass = ArrayHelper::index( $jobsByClass, 'job_class' );
-            }
-            elseif ( $state === 'inProgress' )
-            {
-                $jobsByClass = (new yii\db\Query)
-                    ->select( "queue_push.job_class, count(queue.id) AS {$state}" )
-                    ->from( Yii::$app->queue->tableName )
-                    ->innerJoin( 'queue_push', 'queue_push.job_uid = queue.id' )
-                    ->where( ['NOT', ['queue.reserved_at' => NULL]] )
-                    ->groupBy( 'queue_push.job_class' )
-                    ->all( Yii::$app->queue->db );
-
-                $jobsByClass = ArrayHelper::index( $jobsByClass, 'job_class' );
-            }
-            elseif ( $state === 'backlogged')
-            {
-                $jobsByClass = (new yii\db\Query)
-                    ->select( "queue_push.job_class, count(queue.id) AS {$state}" )
-                    ->from( Yii::$app->queue->tableName )
-                    ->innerJoin( 'queue_push', 'queue_push.job_uid = queue.id' )
-                    ->where( 'queue_push.desired_execute_time < UNIX_TIMESTAMP()' )
-                    ->andWhere( ['queue.reserved_at' => NULL] )
-                    ->groupBy( 'queue_push.job_class' )
-                    ->all( Yii::$app->queue->db );
 
                 $jobsByClass = ArrayHelper::index( $jobsByClass, 'job_class' );
             }
@@ -116,6 +92,10 @@ class PushRecordService
                     ->all();
 
                 $jobsByClass = ArrayHelper::index( $jobsByClass, 'job_class' );
+            }
+            else
+            {
+                throw new Exception( "Unknown state: {$state}" );
             }
 
             // If given a cache object save our result for later
