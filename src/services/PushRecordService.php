@@ -136,6 +136,14 @@ class PushRecordService
 
         foreach ( $pushedJobSummary as $jobClass => $summaryData )
         {
+            // If we have no workers then this queue is never getting worked
+            // down
+            if ( $activeWorkerCount === 0 )
+            {
+                $estimated[$jobClass] = -1;
+                continue;
+            }
+
             $average = ArrayHelper::getValue($summaryData, 'average', 0);
             $backloggedAndInProgress = ArrayHelper::getValue($summaryData, 'backlogged', 0) + ArrayHelper::getValue($summaryData, 'inProgress', 0);
 
