@@ -111,6 +111,7 @@ class JobMonitor extends Behavior
         $push->trace = (new \Exception())->getTraceAsString();
         $push->context = $this->getContext();
         $push->pushed_at = time();
+        $push->status = 'waiting';
         $push->desired_execute_time = time() + $event->delay;
         $push->save(false);
     }
@@ -146,6 +147,7 @@ class JobMonitor extends Behavior
 
             $push->first_exec_id = $push->first_exec_id ?: $exec->id;
             $push->last_exec_id = $exec->id;
+            $push->status = 'in_progress';
             $push->save(false);
 
             if ($worker) {
@@ -171,6 +173,23 @@ class JobMonitor extends Behavior
             // Breaks retry in case is stopped
             $event->retry = false;
         }
+
+        if ( !$event->error )
+        {
+            $push->status = 'success';
+            $push->save();
+        }
+        elseif ( !$event->retry )
+        {
+            $push->status = 'buried';
+            $push->save();
+        }
+	elseif ( $event->retry )
+        {
+            $push->status = 'waiting';
+            $push->save();
+        }
+
         if ($push->last_exec_id) {
             ExecRecord::updateAll([
                 'finished_at' => time(),

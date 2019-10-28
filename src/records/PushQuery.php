@@ -81,10 +81,7 @@ class PushQuery extends ActiveQuery
      */
     public function waiting()
     {
-        return $this
-            ->joinLastExec()
-            ->andWhere(['or', ['push.last_exec_id' => null], ['last_exec.retry' => true]])
-            ->andWhere(['push.stopped_at' => null]);
+        return $this->andWhere(['push.status' => 'waiting']);
     }
 
     /**
@@ -92,10 +89,7 @@ class PushQuery extends ActiveQuery
      */
     public function inProgress()
     {
-        return $this
-            ->andWhere(['is not', 'push.last_exec_id', null])
-            ->joinLastExec()
-            ->andWhere(['last_exec.finished_at' => null]);
+        return $this->andWhere(['push.status' => 'in_progress']);
     }
 
     /**
@@ -103,10 +97,7 @@ class PushQuery extends ActiveQuery
      */
     public function done()
     {
-        return $this
-            ->joinLastExec()
-            ->andWhere(['is not', 'last_exec.finished_at', null])
-            ->andWhere(['last_exec.retry' => false]);
+        return $this->andWhere(['push.status' => ['buried','success']]);
     }
 
     /**
@@ -114,9 +105,7 @@ class PushQuery extends ActiveQuery
      */
     public function success()
     {
-        return $this
-            ->done()
-            ->andWhere(['last_exec.error' => null]);
+        return $this->andWhere(['push.status' => 'success']);
     }
 
     /**
@@ -124,9 +113,7 @@ class PushQuery extends ActiveQuery
      */
     public function buried()
     {
-        return $this
-            ->done()
-            ->andWhere(['is not', 'last_exec.error', null]);
+        return $this->andWhere(['push.status' => 'buried']);
     }
 
     /**

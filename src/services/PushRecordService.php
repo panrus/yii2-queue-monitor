@@ -71,7 +71,7 @@ class PushRecordService
 
             // Most states can be fetched with a simple active query. For the
             // The others we execute a manual query
-            if ( in_array( $state, ['delayed','success','buried','stopped', 'inProgress', 'backlogged']) )
+            if ( in_array( $state, ['delayed','success','buried','stopped','inProgress','backlogged']) )
             {
                 $jobsByClass = PushRecord::find()
                     ->select( "{{push}}.[[job_class]], count({{push}}.[[id]]) as `{$state}`" )
