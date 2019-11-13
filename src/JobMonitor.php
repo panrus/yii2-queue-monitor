@@ -174,22 +174,6 @@ class JobMonitor extends Behavior
             $event->retry = false;
         }
 
-        if ( !$event->error )
-        {
-            $push->status = 'success';
-            $push->save();
-        }
-        elseif ( !$event->retry )
-        {
-            $push->status = 'buried';
-            $push->save();
-        }
-	elseif ( $event->retry )
-        {
-            $push->status = 'waiting';
-            $push->save();
-        }
-
         if ($push->last_exec_id) {
             ExecRecord::updateAll([
                 'finished_at' => time(),
